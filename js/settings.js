@@ -104,7 +104,7 @@ const SettingsManager = {
         const { apiKeys, simulation } = window.appConfig;
 
         // API
-        if (document.getElementById('api-ors')) document.getElementById('api-ors').value = apiKeys.ors || '';
+        if (document.getElementById('api-ors')) document.getElementById('api-ors').value = 'Aktif (Ücretsiz / Genel Sunucu)';
         if (document.getElementById('api-weather')) document.getElementById('api-weather').value = apiKeys.weather || '';
         if (document.getElementById('api-gemini')) document.getElementById('api-gemini').value = apiKeys.gemini || '';
 
@@ -121,9 +121,7 @@ const SettingsManager = {
         if (!keys) keys = {};
         const orsStatus = document.getElementById('api-ors-status');
         if (orsStatus) {
-            orsStatus.innerHTML = keys.ors 
-                ? '<i class="fas fa-circle" style="color:var(--green)"></i> <span style="color:var(--green)">Aktif</span>' 
-                : '<i class="fas fa-circle"></i> <span>Yapılandırılmadı</span>';
+            orsStatus.innerHTML = '<i class="fas fa-circle" style="color:var(--green)"></i> <span style="color:var(--green)">Aktif (Anahtarsız)</span>';
         }
         const weatherStatus = document.getElementById('api-weather-status');
         if (weatherStatus) {

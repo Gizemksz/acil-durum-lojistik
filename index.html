@@ -495,17 +495,16 @@
                 <!-- API Settings -->
                 <div class="settings-panel active" id="spanel-api">
                     <div class="settings-section">
-                        <h3>OpenRouteService API</h3>
-                        <p class="settings-desc">Dinamik rota hesaplama için gereklidir. <a href="https://openrouteservice.org/dev/#/signup" target="_blank">Ücretsiz API anahtarı alın</a></p>
+                        <h3>OSRM Rota Servisi</h3>
+                        <p class="settings-desc">Dinamik yol rota hesaplamaları için genel OSRM (Open Source Routing Machine) servisi kullanılmaktadır. API anahtarı gerektirmez.</p>
                         <div class="form-group">
-                            <label>API Anahtarı</label>
+                            <label>Sunucu Durumu</label>
                             <div class="input-with-btn">
-                                <input type="password" id="api-ors" placeholder="ORS API anahtarınızı giriniz...">
-                                <button class="btn-icon" id="btn-toggle-ors"><i class="fas fa-eye"></i></button>
+                                <input type="text" id="api-ors" readonly disabled style="opacity: 0.75;">
                             </div>
                         </div>
                         <div class="api-status" id="api-ors-status">
-                            <i class="fas fa-circle"></i> <span>Yapılandırılmadı</span>
+                            <i class="fas fa-circle" style="color:var(--green)"></i> <span style="color:var(--green)">Aktif</span>
                         </div>
                     </div>
 
