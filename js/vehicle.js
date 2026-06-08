@@ -104,8 +104,8 @@ class Vehicle {
                     }
                 }
             }
-            // Eğer araç hayali ağdan 1km'den daha uzaksa trafik etkilemesin
-            if (minEdgeDist > 1.0) localTrafficMult = 1.0;
+            // Eğer araç hayali ağdan 20 metreden daha uzaksa trafik etkilemesin
+            if (minEdgeDist > 20.0) localTrafficMult = 1.0;
         }
         
         // Hızı yerel trafiğe göre böl (örneğin trafik 2.0x ise hız yarıya düşer)
