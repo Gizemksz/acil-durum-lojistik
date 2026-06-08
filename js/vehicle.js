@@ -20,6 +20,10 @@ class Vehicle {
         
         this.speed = { ambulance: 80, fire: 60, drone: 120 }[type];
         this.baseSpeed = this.speed;
+
+        // Performance optimization: throttle nearest edge computations
+        this.trafficCheckTimer = 0.5; // Force immediate check on start
+        this.lastTrafficMult = 1.0;
     }
 
     assignRoute(path, incident, status = 'MOVING_TO_INCIDENT') {
@@ -85,9 +89,14 @@ class Vehicle {
         
         // --- DUAL REALITY BRIDGE ---
         // Aracın gerçek OSRM koordinatını hayali trafik ağına (abstract graph) izdüşümle.
-        let localTrafficMult = 1.0;
-        if (this.type !== 'drone') {
+        // Performans Optimizasyonu: Yol ağı aramasını saniyede 2 kez (0.5 sn'de bir) yap.
+        this.trafficCheckTimer += deltaTime;
+        let localTrafficMult = this.lastTrafficMult;
+
+        if (this.type !== 'drone' && this.trafficCheckTimer >= 0.5) {
+            this.trafficCheckTimer = 0;
             let minEdgeDist = Infinity;
+            let bestMult = 1.0;
             for (const [nodeId, edges] of this.graph.adjacencyList.entries()) {
                 const n1 = this.graph.nodes.get(nodeId);
                 if (!n1) continue;
@@ -100,12 +109,15 @@ class Vehicle {
                     const d = this.graph.haversine(this.lat, this.lng, midLat, midLng);
                     if (d < minEdgeDist) {
                         minEdgeDist = d;
-                        localTrafficMult = edge.trafficMultiplier || 1.0;
+                        bestMult = edge.trafficMultiplier || 1.0;
                     }
                 }
             }
             // Eğer araç hayali ağdan 20 metreden daha uzaksa trafik etkilemesin
-            if (minEdgeDist > 20.0) localTrafficMult = 1.0;
+            if (minEdgeDist > 20.0) bestMult = 1.0;
+
+            this.lastTrafficMult = bestMult;
+            localTrafficMult = bestMult;
         }
         
         // Hızı yerel trafiğe göre böl (örneğin trafik 2.0x ise hız yarıya düşer)
