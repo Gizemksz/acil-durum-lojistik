@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Destekli Bursa Nilüfer Akıllı Şehir Lojistik ve Acil Durum Yönetimi - Dijital İkiz Platformu">
+    <title>SmartCity AI — Bursa Nilüfer Akıllı Şehir Yönetimi</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+    <!-- ========== TOP BAR ========== -->
+    <header id="topbar">
+        <div class="topbar-left">
+            <button id="sidebar-toggle" class="topbar-btn" title="Menü">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-city"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-title">SmartCity AI</span>
+                    <span class="logo-subtitle">Bursa Nilüfer - Dijital İkiz</span>
+                </div>
+            </div>
+        </div>
+        <div class="topbar-center">
+            <div class="status-indicators">
+                <div class="status-item active" id="status-system">
+                    <i class="fas fa-circle"></i>
+                    <span>Sistem Aktif</span>
+                </div>
+                <div class="status-item" id="status-ai">
+                    <i class="fas fa-brain"></i>
+                    <span>AI Motor</span>
+                </div>
+                <div class="status-item" id="status-data">
+                    <i class="fas fa-database"></i>
+                    <span>Veri Akışı</span>
+                </div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="datetime" id="datetime-display"></div>
+            <button id="btn-notifications" class="topbar-btn notification-btn" title="Bildirimler">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" id="notif-badge">0</span>
+            </button>
+            <button id="btn-fullscreen" class="topbar-btn" title="Tam Ekran">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button id="btn-settings" class="topbar-btn" title="Ayarlar">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ========== MAIN LAYOUT ========== -->
+    <div id="app-container">
+
+        <!-- ========== SIDEBAR ========== -->
+        <aside id="sidebar" class="sidebar-open">
+            <!-- Sidebar Navigation Tabs -->
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="dashboard" title="Dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="sidebar-tab" data-tab="vehicles" title="Araçlar">
+                    <i class="fas fa-truck-medical"></i>
+                    <span>Araçlar</span>
+                </button>
+                <button class="sidebar-tab" data-tab="emergencies" title="Acil Durumlar">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Acil</span>
+                </button>
+                <button class="sidebar-tab" data-tab="analytics" title="Analitik">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analitik</span>
+                </button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="sidebar-content">
+
+                <!-- Dashboard Tab -->
+                <div class="tab-panel active" id="panel-dashboard">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-tachometer-alt"></i> Kontrol Paneli</h2>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card stat-ambulance">
+                            <div class="stat-icon"><i class="fas fa-ambulance"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-ambulance-count">8</span>
+                                <span class="stat-label">Ambulans</span>
+                            </div>
+                            <div class="stat-status" id="stat-ambulance-active">8 hazır</div>
+                        </div>
+                        <div class="stat-card stat-fire">
+                            <div class="stat-icon"><i class="fas fa-fire-extinguisher"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-fire-count">5</span>
+                                <span class="stat-label">İtfaiye</span>
+                            </div>
+                            <div class="stat-status" id="stat-fire-active">5 hazır</div>
+                        </div>
+                        <div class="stat-card stat-drone">
+                            <div class="stat-icon"><i class="fas fa-helicopter"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-drone-count">6</span>
+                                <span class="stat-label">Drone</span>
+                            </div>
+                            <div class="stat-status" id="stat-drone-active">6 hazır</div>
+                        </div>
+                        <div class="stat-card stat-emergency">
+                            <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-emergency-count">0</span>
+                                <span class="stat-label">Acil Olay</span>
+                            </div>
+                            <div class="stat-status" id="stat-emergency-resolved">Bekleniyor</div>
+                        </div>
+                    </div>
+
+                    <!-- Traffic Overview -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3><i class="fas fa-traffic-light"></i> Trafik Durumu</h3>
+                            <span class="live-badge"><i class="fas fa-circle"></i> CANLI</span>
+                        </div>
+                        <div class="traffic-bars">
+                            <div class="traffic-bar">
+                                <span class="traffic-label">FSM Bulvarı</span>
+                                <div class="traffic-progress">
+                                    <div class="traffic-fill" id="traffic-fsm" style="width: 72%"></div>
+                                </div>
+                                <span class="traffic-value" id="traffic-fsm-val">72%</span>
+                            </div>
+                            <div class="traffic-bar">
+                                <span class="traffic-label">İhsaniye</span>
+                                <div class="traffic-progress">
+                                    <div class="traffic-fill" id="traffic-ihsaniye" style="width: 58%"></div>
+                                </div>
+                                <span class="traffic-value" id="traffic-ihsaniye-val">58%</span>
+                            </div>
+                            <div class="traffic-bar">
+                                <span class="traffic-label">Beşevler</span>
+                                <div class="traffic-progress">
+                                    <div class="traffic-fill" id="traffic-besevler" style="width: 81%"></div>
+                                </div>
+                                <span class="traffic-value" id="traffic-besevler-val">81%</span>
+                            </div>
+                            <div class="traffic-bar">
+                                <span class="traffic-label">Görükle</span>
+                                <div class="traffic-progress">
+                                    <div class="traffic-fill" id="traffic-gorukle" style="width: 45%"></div>
+                                </div>
+                                <span class="traffic-value" id="traffic-gorukle-val">45%</span>
+                            </div>
+                            <div class="traffic-bar">
+                                <span class="traffic-label">Özlüce</span>
+                                <div class="traffic-progress">
+                                    <div class="traffic-fill" id="traffic-ozluce" style="width: 63%"></div>
+                                </div>
+                                <span class="traffic-value" id="traffic-ozluce-val">63%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Insights -->
+                    <div class="section-card ai-insights">
+                        <div class="section-header">
+                            <h3><i class="fas fa-robot"></i> AI Önerileri</h3>
+                        </div>
+                        <button id="btn-ai-analysis" class="btn-secondary" style="width: 100%; margin-bottom: 12px; font-weight: bold;">
+                            <i class="fas fa-brain"></i> Sistem Genel Analizi (Gemini)
+                        </button>
+                        <div class="insights-list" id="ai-insights-list">
+                            <div class="insight-item">
+                                <i class="fas fa-lightbulb"></i>
+                                <span>Simülasyon başlatılmadı. Başlatmak için haritaya tıklayın.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicles Tab -->
+                <div class="tab-panel" id="panel-vehicles">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-truck-medical"></i> Araç Yönetimi</h2>
+                    </div>
+
+                    <!-- Vehicle Filters -->
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-filter="all">
+                            <i class="fas fa-list"></i> Tümü
+                        </button>
+                        <button class="filter-btn" data-filter="ambulance">
+                            <i class="fas fa-ambulance"></i> Ambulans
+                        </button>
+                        <button class="filter-btn" data-filter="fire">
+                            <i class="fas fa-fire-extinguisher"></i> İtfaiye
+                        </button>
+                        <button class="filter-btn" data-filter="drone">
+                            <i class="fas fa-helicopter"></i> Drone
+                        </button>
+                    </div>
+
+                    <!-- Vehicle List -->
+                    <div class="vehicle-list" id="vehicle-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Emergencies Tab -->
+                <div class="tab-panel" id="panel-emergencies">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-exclamation-triangle"></i> Acil Durum Merkezi</h2>
+                    </div>
+
+                    <!-- New Emergency Button -->
+                    <button class="btn-primary btn-full" id="btn-new-emergency">
+                        <i class="fas fa-plus-circle"></i> Yeni Acil Durum Oluştur
+                    </button>
+
+                    <!-- Emergency Priority Filter -->
+                    <div class="filter-group" style="margin-top: 12px;">
+                        <button class="filter-btn active" data-efilter="all">Tümü</button>
+                        <button class="filter-btn" data-efilter="critical">Kritik</button>
+                        <button class="filter-btn" data-efilter="high">Yüksek</button>
+                        <button class="filter-btn" data-efilter="medium">Orta</button>
+                    </div>
+
+                    <!-- Emergency List -->
+                    <div class="emergency-list" id="emergency-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div class="tab-panel" id="panel-analytics">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-chart-line"></i> Analitik</h2>
+                    </div>
+
+                    <!-- Live ETA Chart -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3><i class="fas fa-truck-fast"></i> Canlı Varış Süresi (ETA)</h3>
+                        </div>
+                        <div class="chart-container" id="live-eta-chart">
+                            <canvas id="canvas-live-eta"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Historical Response Time Chart -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3><i class="fas fa-clock"></i> Ortalama Müdahale Süresi</h3>
+                        </div>
+                        <div class="chart-container" id="response-time-chart">
+                            <canvas id="canvas-response-time"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Incident Stats -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3><i class="fas fa-chart-pie"></i> Olay Dağılımı</h3>
+                        </div>
+                        <div class="chart-container" id="incident-chart">
+                            <canvas id="canvas-incidents"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Performance Metrics -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3><i class="fas fa-gauge-high"></i> Performans Metrikleri</h3>
+                        </div>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-circle" id="metric-response">
+                                    <svg viewBox="0 0 36 36">
+                                        <path class="metric-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                        <path class="metric-fill" stroke-dasharray="87, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    </svg>
+                                    <span class="metric-value">87%</span>
+                                </div>
+                                <span class="metric-label">Yanıt Hızı</span>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-circle" id="metric-coverage">
+                                    <svg viewBox="0 0 36 36">
+                                        <path class="metric-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                        <path class="metric-fill coverage" stroke-dasharray="92, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    </svg>
+                                    <span class="metric-value">92%</span>
+                                </div>
+                                <span class="metric-label">Kapsama</span>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-circle" id="metric-efficiency">
+                                    <svg viewBox="0 0 36 36">
+                                        <path class="metric-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                        <path class="metric-fill efficiency" stroke-dasharray="78, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    </svg>
+                                    <span class="metric-value">78%</span>
+                                </div>
+                                <span class="metric-label">Verimlilik</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Controls -->
+            <div class="sidebar-footer">
+                <div class="sim-controls">
+                    <button id="btn-start-sim" class="btn-sim btn-start" title="Simülasyonu Başlat">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button id="btn-pause-sim" class="btn-sim btn-pause" title="Duraklat" disabled>
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button id="btn-reset-sim" class="btn-sim btn-reset" title="Sıfırla">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <div class="sim-speed">
+                        <label>Hız</label>
+                        <input type="range" id="sim-speed" min="1" max="10" value="3">
+                        <span id="sim-speed-val">3x</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ========== MAP AREA ========== -->
+        <main id="map-container">
+            <div id="map">Harita Yükleniyor... (Eğer bu yazı kalıyorsa, API veya JS'te bir hata var demektir)</div>
+
+            <!-- Map Overlay Controls -->
+            <div class="map-controls">
+                <div class="map-control-group">
+                    <button class="map-ctrl-btn" id="btn-layer-traffic" title="Trafik Katmanı">
+                        <i class="fas fa-car"></i>
+                    </button>
+                    <button class="map-ctrl-btn" id="btn-layer-heatmap" title="Yoğunluk Haritası">
+                        <i class="fas fa-fire"></i>
+                    </button>
+                    <button class="map-ctrl-btn" id="btn-layer-routes" title="Rotalar">
+                        <i class="fas fa-route"></i>
+                    </button>
+                    <button class="map-ctrl-btn" id="btn-layer-zones" title="Bölgeler">
+                        <i class="fas fa-draw-polygon"></i>
+                    </button>
+                    <button class="map-ctrl-btn" id="btn-weather" title="Hava Durumu Değiştir">
+                        <i class="fas fa-cloud-sun"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Map Legend -->
+            <div class="map-legend" id="map-legend">
+                <div class="legend-header">
+                    <span>Harita Gösterimi</span>
+                    <button class="legend-toggle" id="legend-toggle"><i class="fas fa-chevron-down"></i></button>
+                </div>
+                <div class="legend-body" id="legend-body">
+                    <div class="legend-item">
+                        <span class="legend-dot ambulance"></span>
+                        <span>Ambulans</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot fire"></span>
+                        <span>İtfaiye</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot drone"></span>
+                        <span>Kargo Drone</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot emergency"></span>
+                        <span>Acil Durum</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot hospital"></span>
+                        <span>Hastane</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot station"></span>
+                        <span>İtfaiye İstasyonu</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Creation Popup -->
+            <div class="emergency-popup-overlay" id="emergency-popup-overlay" style="display:none;"></div>
+            <div class="emergency-popup" id="emergency-popup" style="display:none;">
+                <div class="popup-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Yeni Acil Durum</h3>
+                    <button class="popup-close" id="popup-close">&times;</button>
+                </div>
+                <div class="popup-body">
+                    <div class="form-group">
+                        <label>Olay Tipi</label>
+                        <select id="emergency-type">
+                            <option value="medical">🏥 Tıbbi Acil</option>
+                            <option value="fire">🔥 Yangın</option>
+                            <option value="accident">🚗 Trafik Kazası</option>
+                            <option value="cargo">📦 Acil Kargo</option>
+                            <option value="natural">🌊 Doğal Afet</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Öncelik</label>
+                        <div class="priority-selector">
+                            <button class="priority-btn" data-priority="critical">Kritik</button>
+                            <button class="priority-btn active" data-priority="high">Yüksek</button>
+                            <button class="priority-btn" data-priority="medium">Orta</button>
+                            <button class="priority-btn" data-priority="low">Düşük</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Açıklama</label>
+                        <textarea id="emergency-desc" placeholder="Olay detaylarını giriniz..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Konum</label>
+                        <input type="text" id="emergency-location" readonly>
+                    </div>
+                    <button class="btn-primary btn-full" id="btn-dispatch-emergency">
+                        <i class="fas fa-paper-plane"></i> Sevk Et
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========== NOTIFICATIONS PANEL ========== -->
+    <div class="notifications-panel" id="notifications-panel" style="display:none;">
+        <div class="notif-header">
+            <h3><i class="fas fa-bell"></i> Bildirimler</h3>
+            <button class="btn-clear-notifs" id="btn-clear-notifs">Temizle</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+
+    <!-- ========== SETTINGS MODAL ========== -->
+    <div class="modal-overlay" id="settings-modal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Ayarlar</h2>
+                <button class="modal-close" id="settings-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Settings Tabs -->
+                <div class="settings-tabs">
+                    <button class="settings-tab active" data-stab="api">
+                        <i class="fas fa-key"></i> API Anahtarları
+                    </button>
+                    <button class="settings-tab" data-stab="map">
+                        <i class="fas fa-map"></i> Harita
+                    </button>
+                    <button class="settings-tab" data-stab="simulation">
+                        <i class="fas fa-cogs"></i> Simülasyon
+                    </button>
+                    <button class="settings-tab" data-stab="appearance">
+                        <i class="fas fa-palette"></i> Görünüm
+                    </button>
+                </div>
+
+                <!-- API Settings -->
+                <div class="settings-panel active" id="spanel-api">
+                    <div class="settings-section">
+                        <h3>OpenRouteService API</h3>
+                        <p class="settings-desc">Dinamik rota hesaplama için gereklidir. <a href="https://openrouteservice.org/dev/#/signup" target="_blank">Ücretsiz API anahtarı alın</a></p>
+                        <div class="form-group">
+                            <label>API Anahtarı</label>
+                            <div class="input-with-btn">
+                                <input type="password" id="api-ors" placeholder="ORS API anahtarınızı giriniz...">
+                                <button class="btn-icon" id="btn-toggle-ors"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="api-status" id="api-ors-status">
+                            <i class="fas fa-circle"></i> <span>Yapılandırılmadı</span>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>OpenWeatherMap API</h3>
+                        <p class="settings-desc">Hava durumu verisi ve görselleştirme için. <a href="https://openweathermap.org/api" target="_blank">Ücretsiz API anahtarı alın</a></p>
+                        <div class="form-group">
+                            <label>API Anahtarı</label>
+                            <div class="input-with-btn">
+                                <input type="password" id="api-weather" placeholder="OpenWeatherMap API anahtarınızı giriniz...">
+                                <button class="btn-icon" id="btn-toggle-weather"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="api-status" id="api-weather-status">
+                            <i class="fas fa-circle"></i> <span>Yapılandırılmadı</span>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Google Gemini API</h3>
+                        <p class="settings-desc">AI destekli rota optimizasyonu ve öneriler için. <a href="https://aistudio.google.com/apikey" target="_blank">Ücretsiz API anahtarı alın</a></p>
+                        <div class="form-group">
+                            <label>API Anahtarı</label>
+                            <div class="input-with-btn">
+                                <input type="password" id="api-gemini" placeholder="Gemini API anahtarınızı giriniz...">
+                                <button class="btn-icon" id="btn-toggle-gemini"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="api-status" id="api-gemini-status">
+                            <i class="fas fa-circle"></i> <span>Yapılandırılmadı</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" id="btn-save-api">
+                        <i class="fas fa-save"></i> API Ayarlarını Kaydet
+                    </button>
+                    <button class="btn-secondary" id="btn-test-api" style="margin-left: 8px;">
+                        <i class="fas fa-vial"></i> Bağlantı Testi
+                    </button>
+                </div>
+
+                <!-- Map Settings -->
+                <div class="settings-panel" id="spanel-map">
+                    <div class="settings-section">
+                        <h3>Harita Görünümü</h3>
+                        <div class="form-group">
+                            <label>Harita Stili</label>
+                            <select id="map-style">
+                                <option value="dark">Koyu Tema</option>
+                                <option value="light">Açık Tema</option>
+                                <option value="satellite">Uydu Görünümü</option>
+                                <option value="terrain">Arazi Görünümü</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Varsayılan Şehir</label>
+                            <select id="map-city">
+                                <option value="bursa-nilufer" selected>Bursa - Nilüfer</option>
+                                <option value="istanbul">İstanbul</option>
+                                <option value="ankara">Ankara</option>
+                                <option value="izmir">İzmir</option>
+                                <option value="antalya">Antalya</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Varsayılan Zoom</label>
+                            <input type="range" id="map-zoom" min="10" max="18" value="13">
+                            <span id="map-zoom-val">13</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Settings -->
+                <div class="settings-panel" id="spanel-simulation">
+                    <div class="settings-section">
+                        <h3>Simülasyon Parametreleri</h3>
+                        <div class="form-group">
+                            <label>Ambulans Sayısı</label>
+                            <input type="number" id="sim-ambulance-count" min="1" max="20" value="8">
+                        </div>
+                        <div class="form-group">
+                            <label>İtfaiye Sayısı</label>
+                            <input type="number" id="sim-fire-count" min="1" max="15" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label>Drone Sayısı</label>
+                            <input type="number" id="sim-drone-count" min="1" max="25" value="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Rastgele Olay Sıklığı (saniye)</label>
+                            <input type="number" id="sim-event-freq" min="5" max="120" value="15">
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="sim-auto-dispatch" checked>
+                            <label for="sim-auto-dispatch">Otomatik Sevk (AI)</label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="sim-traffic-sim" checked>
+                            <label for="sim-traffic-sim">Trafik Simülasyonu</label>
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="btn-save-sim">
+                        <i class="fas fa-save"></i> Simülasyon Ayarlarını Kaydet
+                    </button>
+                </div>
+
+                <!-- Appearance Settings -->
+                <div class="settings-panel" id="spanel-appearance">
+                    <div class="settings-section">
+                        <h3>Tema Ayarları</h3>
+                        <div class="theme-selector">
+                            <div class="theme-option active" data-theme="dark">
+                                <div class="theme-preview dark-preview"></div>
+                                <span>Koyu</span>
+                            </div>
+                            <div class="theme-option" data-theme="light">
+                                <div class="theme-preview light-preview"></div>
+                                <span>Açık</span>
+                            </div>
+                            <div class="theme-option" data-theme="cyber">
+                                <div class="theme-preview cyber-preview"></div>
+                                <span>Siber</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Animasyon</h3>
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="setting-animations" checked>
+                            <label for="setting-animations">Araç animasyonları</label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="setting-particles" checked>
+                            <label for="setting-particles">Parçacık efektleri</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== TOAST NOTIFICATIONS ========== -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ========== SCRIPTS ========== -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    
+    <!-- Config and Core Components -->
+    <script src="js/settings.js?v=3"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/heap.js"></script>
+    <script src="js/astar.js"></script>
+    <script src="js/traffic.js"></script>
+    <script src="js/emergency.js"></script>
+    <script src="js/vehicle.js?v=6"></script>
+    <script src="js/coordinator.js?v=3"></script>
+    <script src="js/renderer.js?v=4"></script>
+    <script src="data/map_data.js?v=4"></script>
+    
+    <!-- Simulation Logic -->
+    <script src="js/simulation_core.js"></script>
+    
+    <!-- Main App (Must be last) -->
+    <script src="js/app_core.js"></script>
+</body>
+</html>
