@@ -17,8 +17,27 @@ class TrafficSimulator {
                 console.log("TF.js trafik tahmin modeli başarıyla yüklendi.");
             }
         } catch (e) {
-            console.warn("TF.js tahmin modeli (data/tfjs_model/model.json) henüz mevcut değil. Varsayılan süreler kullanılacak.");
+            console.log("TF.js tahmin modeli (data/tfjs_model/model.json) bulunamadı. Dinamik mock tahmin motoru aktif edildi.");
+            this.model = null;
         }
+    }
+
+    _predictMockDuration(weatherMultiplier, severity, hour) {
+        // Mock Linear Predictor Formula:
+        // Kaza süresi hava durumu, trafik ciddiyeti ve peak saat çarpanlarına bağlıdır
+        const base = 40;
+        const weatherCoeff = (weatherMultiplier - 1.0) * 50; // Yağmurlu/karlı havalarda daha uzun sürer
+        const severityCoeff = severity * 15; // Kaza ciddiyeti süreyi artırır
+        
+        let hourCoeff = 0;
+        if ((hour >= 8 && hour <= 10) || (hour >= 17 && hour <= 19)) {
+            hourCoeff = 30; // Trafik peak saatleri
+        } else if (hour >= 23 || hour <= 5) {
+            hourCoeff = -15; // Gece saatlerinde tıkanıklık hızlı çözülür
+        }
+        
+        const predicted = base + weatherCoeff + severityCoeff + hourCoeff;
+        return Math.max(20, Math.round(predicted)); // en az 20 tick
     }
 
     update() {
@@ -48,7 +67,7 @@ class TrafficSimulator {
             const severity = 1.5 + Math.random() * 3.5; // 1.5x - 5.0x slower
             let duration = 50 + Math.floor(Math.random() * 100); // in ticks
 
-            // TensorFlow.js modeli yüklüyse tıkanıklık süresini dinamik tahmin et
+            // TensorFlow.js veya Mock modeli kullanarak tıkanıklık süresini dinamik tahmin et
             if (this.model && window.tf) {
                 try {
                     // Örnek Input: [weatherMultiplier, severity, hour]
@@ -62,8 +81,14 @@ class TrafficSimulator {
                     inputTensor.dispose();
                     prediction.dispose();
                 } catch (e) {
-                    console.warn("TF.js Tahmin hatası, varsayılan süre kullanılıyor:", e);
+                    console.warn("TF.js Tahmin hatası, mock model kullanılıyor:", e);
+                    const hour = new Date().getHours();
+                    duration = this._predictMockDuration(this.weatherMultiplier, severity, hour);
                 }
+            } else {
+                // TF model yüklenmediyse mock tahminleme ile devam et (sessizce)
+                const hour = new Date().getHours();
+                duration = this._predictMockDuration(this.weatherMultiplier, severity, hour);
             }
 
             this.incidents.push({ edge, severity, remaining: duration, from: randomNode, to: edge.to });
