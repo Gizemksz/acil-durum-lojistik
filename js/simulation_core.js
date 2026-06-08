@@ -415,6 +415,14 @@ class Simulation {
         
         this.stats.activeVehicles = activeCount;
 
+        // Dynamic Re-routing check (every 5 simulated seconds)
+        if (!this.lastReRouteTime) this.lastReRouteTime = 0;
+        this.lastReRouteTime += dt * this.speedMultiplier;
+        if (this.lastReRouteTime >= 5.0) {
+            this.lastReRouteTime = 0;
+            this._performDynamicReRouting();
+        }
+
         // 4. Coordinator Conflicts
         this.coordinator.checkConflicts();
 
@@ -464,11 +472,26 @@ class Simulation {
                 this.coordinator.applyGreenWave(this.graph, result.path);
             }
 
-            // OpenRouteService entegrasyonu
-            let coords = await this._getDynamicRouteORS(vehicle.lat, vehicle.lng, targetLat, targetLng);
+            // OSRM için A* düğüm koordinatlarını dizi olarak hazırla
+            const pathCoords = [];
+            // Başlangıç koordinatı olarak aracın anlık konumunu ekle
+            pathCoords.push({ lat: vehicle.lat, lng: vehicle.lng });
+            
+            // A* rotasındaki ara düğüm koordinatlarını ekle
+            for (let i = 0; i < result.path.length; i++) {
+                const node = this.graph.nodes.get(result.path[i]);
+                if (node) {
+                    pathCoords.push({ lat: node.lat, lng: node.lng });
+                }
+            }
+            // Hedef koordinatı ekle
+            pathCoords.push({ lat: targetLat, lng: targetLng });
+
+            // OSRM entegrasyonu (A* güzergahındaki düğümleri ara nokta olarak geçirerek gerçek yol eğrilerini al)
+            let coords = await this._getDynamicRouteOSRM(pathCoords);
             
             if (!coords || coords.length === 0) {
-                // ORS başarısız olursa fall back olarak A* sonucunu kullan
+                // OSRM başarısız olursa fall back olarak A* sonucunu kullan
                 coords = result.path.map(id => {
                     const node = this.graph.nodes.get(id);
                     return { lat: node.lat, lng: node.lng };
@@ -537,9 +560,11 @@ class Simulation {
         return densities;
     }
 
-    async _getDynamicRouteORS(startLat, startLng, endLat, endLng) {
-        // Gerçek yolları kullanmak için ücretsiz ve API key gerektirmeyen OSRM altyapısına geçiş yapıldı.
-        const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
+    async _getDynamicRouteOSRM(coordsArray) {
+        if (!coordsArray || coordsArray.length < 2) return null;
+        
+        const waypoints = coordsArray.map(c => `${c.lng},${c.lat}`).join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`;
         
         try {
             const res = await fetch(url);
@@ -556,6 +581,72 @@ class Simulation {
             console.error("OSRM Route Error", e);
         }
         return null;
+    }
+
+    _performDynamicReRouting() {
+        for (const vehicle of this.vehicles) {
+            if (vehicle.type === 'drone') continue; // Dronelar düz uçar, trafiğe takılmaz
+            if (vehicle.status !== 'MOVING_TO_INCIDENT' && vehicle.status !== 'TRANSPORTING') continue;
+            
+            const incident = vehicle.currentIncident;
+            let targetLat, targetLng, targetNode;
+            
+            if (vehicle.status === 'MOVING_TO_INCIDENT') {
+                if (!incident) continue;
+                targetLat = incident.lat;
+                targetLng = incident.lng;
+                targetNode = this.graph.getNearestNode(incident.lat, incident.lng);
+            } else { // TRANSPORTING (Ambulans hastaneye gidiyor)
+                const hospital = this.emergencyManager.getBestHospital(vehicle.lat, vehicle.lng, this.graph);
+                if (!hospital || !hospital.node) continue;
+                targetLat = hospital.lat;
+                targetLng = hospital.lng;
+                targetNode = hospital.node;
+            }
+            
+            // Mevcut koordinatından hedefe yeni A* hesapla
+            const currentNearestNode = this.graph.getNearestNode(vehicle.lat, vehicle.lng);
+            if (!currentNearestNode || currentNearestNode === targetNode) continue;
+            
+            // Yeni rotayı hesapla (Trafik ağırlıklı)
+            const newResult = aStar(this.graph, currentNearestNode, targetNode, this.trafficSimulator.weatherMultiplier, false);
+            if (!newResult || newResult.path.length < 2) continue;
+            
+            // Eğer yeni bulunan yol daha hızlı/kısa ise rotayı güncelle
+            // (Küçük oynamaları engellemek için mesafe farkı en az %15 olmalı veya yol tıkanmış olmalı)
+            const currentRemainingDist = this._calculateRemainingPathDistance(vehicle);
+            const newRouteDist = newResult.distance; // A* ağırlıklı mesafe (trafik çarpanları dahil)
+            
+            if (newRouteDist < currentRemainingDist * 0.85) {
+                // Rota değişikliğini bildir ve ata
+                console.log(`[Re-routing] Araç ${vehicle.id} için daha hızlı bir rota bulundu. Eski ağırlıklı kalan mesafe: ${Math.round(currentRemainingDist)}m, Yeni rota ağırlığı: ${Math.round(newRouteDist)}m.`);
+                this._assignVehicleRoute(vehicle, newResult, targetLat, targetLng, incident, vehicle.status);
+                
+                // Kullanıcıya bildirim gönder
+                if (typeof addNotification === 'function') {
+                    addNotification('Alternatif Rota', `Araç ${vehicle.id} yoğun trafik nedeniyle alternatif rotaya yönlendirildi.`, 'info');
+                }
+            }
+        }
+    }
+
+    _calculateRemainingPathDistance(vehicle) {
+        if (!vehicle.path || vehicle.path.length === 0) return Infinity;
+        let dist = 0;
+        
+        // Mevcut pozisyondan bir sonraki yol noktasına olan mesafe
+        const nextNode = vehicle.path[vehicle.pathIndex + 1];
+        if (nextNode) {
+            dist += this.graph.haversine(vehicle.lat, vehicle.lng, nextNode.lat, nextNode.lng);
+        }
+        
+        // Geri kalan yol noktaları arasındaki mesafeler
+        for (let i = vehicle.pathIndex + 1; i < vehicle.path.length - 1; i++) {
+            const p1 = vehicle.path[i];
+            const p2 = vehicle.path[i+1];
+            dist += this.graph.haversine(p1.lat, p1.lng, p2.lat, p2.lng);
+        }
+        return dist;
     }
 
     async _generateGeminiReport(incident, vehicle, distance, timeMin, weatherText, detourTaken) {

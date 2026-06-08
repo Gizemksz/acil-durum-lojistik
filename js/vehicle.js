@@ -47,6 +47,8 @@ class Vehicle {
             if (this.currentIncident && !this.currentIncident.arrivedAt) {
                 this.currentIncident.arrivedAt = Date.now();
             }
+            // Konumu en yakın graf düğümüyle güncelle
+            this.nodeId = this.graph.getNearestNode(this.lat, this.lng);
         } else if (this.status === 'TRANSPORTING' || this.status === 'RETURNING') {
             this.status = 'IDLE';
             if (this.currentIncident) {
@@ -54,6 +56,8 @@ class Vehicle {
                 document.dispatchEvent(new CustomEvent('incidentFullyResolved', { detail: { id: this.currentIncident.id } }));
                 this.currentIncident = null;
             }
+            // Üsse veya hastaneye vardığında konumu güncelle
+            this.nodeId = this.homeBase ? (this.homeBase.node || this.baseNodeId) : this.graph.getNearestNode(this.lat, this.lng);
         }
     }
 
