@@ -330,6 +330,9 @@ async function initApp() {
             if (style === 'light') url = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
             else if (style === 'satellite') url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
             else if (style === 'terrain') url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
+            else if (style === 'google-road') url = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+            else if (style === 'google-satellite') url = 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
+            else if (style === 'google-hybrid') url = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
             
             sim.renderer.tileLayer.setUrl(url);
             addNotification('Harita', 'Harita stili güncellendi.', 'info');
