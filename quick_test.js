@@ -7,8 +7,8 @@ http.get('http://localhost:8080/index.html', (res) => {
     if(res.statusCode === 200) console.log("=> OK: HTML ve CSS (UI Katmanı) ayakta.");
 });
 
-http.get('http://localhost:8080/js/app.js', (res) => {
-    console.log(`[TEST] app.js Server Response: ${res.statusCode}`);
+http.get('http://localhost:8080/js/app_core.js', (res) => {
+    console.log(`[TEST] app_core.js Server Response: ${res.statusCode}`);
     if(res.statusCode === 200) console.log("=> OK: Algoritma motoru (TSP, MCDM, V2X, Dijkstra) aktif ve erişilebilir.");
     
     setTimeout(() => {
