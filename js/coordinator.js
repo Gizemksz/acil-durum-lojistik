@@ -18,8 +18,8 @@ class AgentCoordinator {
                     if(a.type === 'drone' || b.type === 'drone') continue;
 
                     // Use Haversine distance since vehicles are on continuous real coordinates
-                    const distKm = a.graph.haversine(a.lat, a.lng, b.lat, b.lng);
-                    if (distKm < 0.03) { // 30 meters
+                    const distMeters = a.graph.haversine(a.lat, a.lng, b.lat, b.lng);
+                    if (distMeters < 30.0) { // 30 meters
                         conflicts.push({ a: a.id, b: b.id });
                         this._resolveConflict(a, b);
                     }
